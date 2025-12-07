@@ -376,15 +376,27 @@
         }
 
         function speakCurrentKanji() {
-            if (currentItem) {
-                const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=${encodeURIComponent(currentItem.kanji)}`);
-                audio.play().catch(e => {
-                    console.log('Autoplay blocked - click a button first');
+            if (!currentItem) return alert('No current kanji');
+            
+            const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=${encodeURIComponent(currentItem.kanji)}`);
+            audio.volume = 0.8; // Slightly quieter to avoid clipping
+            
+            // Multiple fallback strategies
+            const tryPlay = () => {
+                audio.play().catch(() => {
+                    // Silent retry after 100ms
+                    setTimeout(tryPlay, 100);
                 });
-            } else {
-                alert('No current kanji to speak');
-            }
+            };
+            
+            audio.addEventListener('canplaythrough', tryPlay, { once: true });
+            audio.addEventListener('loadstart', () => {
+                console.log('Loading TTS audio...');
+            });
+            
+            tryPlay(); // Initial attempt
         }
+
 
 
         function showStats() {
