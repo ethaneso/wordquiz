@@ -376,28 +376,14 @@
         }
 
         function speakCurrentKanji() {
-            if (!currentItem) return alert('No current kanji');
-            
-            const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=${encodeURIComponent(currentItem.kanji)}`);
-            audio.volume = 0.8; // Slightly quieter to avoid clipping
-            
-            // Multiple fallback strategies
-            const tryPlay = () => {
-                audio.play().catch(() => {
-                    // Silent retry after 100ms
-                    setTimeout(tryPlay, 100);
-                });
-            };
-            
-            audio.addEventListener('canplaythrough', tryPlay, { once: true });
-            audio.addEventListener('loadstart', () => {
-                console.log('Loading TTS audio...');
-            });
-            
-            tryPlay(); // Initial attempt
+            if ('speechSynthesis' in window && currentItem) {
+                const utterance = new SpeechSynthesisUtterance(currentItem.kanji);
+                utterance.lang = 'ja-JP';
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('Speech synthesis not supported in this browser');
+            }
         }
-
-
 
         function showStats() {
             const stats = gameData.map((item, i) => `
