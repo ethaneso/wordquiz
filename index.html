@@ -553,10 +553,10 @@
             if (isCorrect) {
                 score.correct++;
                 currentItem.correct++;
-                showFeedback('Correct! ' + currentItem.romaji, 'correct');
+                showFeedback(currentItem.romaji, 'correct');
             } else {
                 currentItem.wrong++;
-                showFeedback('Wrong. Correct: ' + currentItem.romaji, 'wrong');
+                showFeedback(currentItem.romaji, 'wrong');
             }
 
             gameData[currentItem.index] = currentItem;
