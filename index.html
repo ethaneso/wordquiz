@@ -6,11 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kanji Pronunciation Game</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
+            line-height: 1.5;
+        }
+
+        h2,
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
         }
 
         .section {
@@ -23,55 +34,20 @@
         }
 
         input,
-        button {
+        button,
+        select,
+        label {
             font-size: 16px;
-            padding: 10px;
-            margin: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        th,
-        td {
-            border: 1px solid #ddd;
+            /* Prevents zoom on iOS */
             padding: 12px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        .kanji-cell {
-            font-size: 24px;
-            font-family: 'Noto Sans JP', sans-serif;
-        }
-
-        .score {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-
-        .feedback {
-            font-size: 20px;
-            padding: 15px;
-            margin: 10px 0;
+            margin: 5px 0;
             border-radius: 5px;
+            border: 1px solid #ddd;
         }
 
-        .correct {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .wrong {
-            background-color: #f8d7da;
-            color: #721c24;
+        input {
+            width: 100%;
+            max-width: 300px;
         }
 
         button {
@@ -79,7 +55,10 @@
             color: white;
             border: none;
             cursor: pointer;
-            border-radius: 5px;
+            min-height: 44px;
+            /* Touch-friendly */
+            width: 100%;
+            margin: 5px 0;
         }
 
         button:hover {
@@ -88,6 +67,8 @@
 
         .delete-btn {
             background: #dc3545;
+            width: auto;
+            display: inline-block;
         }
 
         .delete-btn:hover {
@@ -110,13 +91,60 @@
             background: #138496;
         }
 
-        .input-row input {
+        table {
             width: 100%;
-            font-size: 20px;
+            border-collapse: collapse;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
         }
 
-        #csvFileInput {
-            display: none;
+        thead {
+            position: sticky;
+            top: 0;
+            background: #f2f2f2;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px 8px;
+            text-align: left;
+            min-width: 80px;
+        }
+
+        .kanji-cell {
+            font-size: clamp(12px, 6vw, 16px);
+            font-family: 'Noto Sans JP', sans-serif;
+            text-align: center;
+        }
+
+        .score {
+            font-size: clamp(18px, 5vw, 24px);
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .feedback {
+            font-size: clamp(16px, 4vw, 20px);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .wrong {
+            background-color: #f8d7da;
+            color: #721c24;
         }
 
         .csv-controls {
@@ -125,23 +153,110 @@
             border-radius: 5px;
             margin: 20px 0;
         }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .input-row {
+                flex-direction: row;
+            }
+
+            input[type="text"] {
+                max-width: none;
+            }
+
+            button {
+                width: auto;
+            }
+
+            table {
+                overflow-x: visible;
+                display: table;
+            }
+        }
+
+        /* Modal responsive */
+        #statsModal {
+            position: fixed;
+            top: 10%;
+            left: 5%;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: white;
+            border: 2px solid #ccc;
+            padding: 20px;
+            display: none;
+            z-index: 1000;
+            border-radius: 10px;
+        }
+
+        /* Game area centering */
+        #questionArea {
+            text-align: center;
+        }
+
+        #kanjiDisplay {
+            font-size: clamp(16px, 12vw, 24px);
+            margin: 30px 0;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #answerInput {
+            width: 90%;
+            max-width: 300px;
+            font-size: clamp(12px, 5vw, 16px);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+            margin: 20px auto;
+        }
+
+        @media (min-width: 480px) {
+            .button-group {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            button {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
     </style>
 </head>
 
 <body>
     <!-- Kanji List Management Section -->
     <div id="inputSection" class="section active">
-        <h2>📝 Kanji List Management</h2>
+        <h2>Kanji List Management</h2>
         <p>Add new kanji or remove mastered ones. Your list persists in sessionStorage.</p>
 
         <!-- CSV Import/Export Controls -->
         <div class="csv-controls">
-            <h3>📊 CSV Import/Export</h3>
+            <h3>CSV Import/Export</h3>
             <p>Export to edit in Excel/Google Sheets, then import back.</p>
-            <button class="export-btn" onclick="exportToCSV()">📤 Export to CSV</button>
-            <label for="csvFileInput" class="export-btn" style="cursor: pointer; display: inline-block;">📥 Import
+            <button class="export-btn" onclick="exportToCSV()">Export to CSV</button>
+            <label for="csvFileInput" class="export-btn" style="cursor: pointer; display: inline-block;">Import
                 CSV</label>
-            <input type="file" id="csvFileInput" accept=".csv" />
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
         </div>
 
         <table id="kanjiListTable">
@@ -155,14 +270,16 @@
             </thead>
             <tbody></tbody>
         </table>
-        <div style="margin: 20px 0;">
-            <input type="text" id="newKanjiInput" placeholder="Enter new kanji (e.g. 食べる)" style="width: 300px;">
-            <input type="text" id="newRomajiInput" placeholder="Romaji (e.g. taberu)" style="width: 200px;">
-            <button class="add-btn" onclick="addNewKanji()">➕ Add Kanji</button>
+
+        <div class="input-row">
+            <input type="text" id="newKanjiInput" placeholder="Enter new kanji (e.g. 食べる)">
+            <input type="text" id="newRomajiInput" placeholder="Romaji (e.g. taberu)">
+            <button class="add-btn" onclick="addNewKanji()">Add Kanji</button>
         </div>
-        <div>
-            <button onclick="loadRomajiEditTable()">✏️ Edit Romaji → Start Game</button>
-            <button onclick="clearAllData()">🗑️ Clear All Data</button>
+
+        <div class="button-group">
+            <button onclick="loadRomajiEditTable()">Edit Romaji → Start Game</button>
+            <button onclick="clearAllData()" style="background: #6c757d;">Clear All Data</button>
         </div>
     </div>
 
@@ -178,37 +295,41 @@
             </thead>
             <tbody></tbody>
         </table>
-        <button onclick="saveEditedList()">Save → Start Game</button>
-        <button onclick="goBackToInput()">← Back to List</button>
+        <div class="button-group">
+            <button onclick="saveEditedList()">Save → Start Game</button>
+            <button onclick="goBackToInput()">Back to List</button>
+        </div>
     </div>
 
     <!-- Game Section -->
     <div id="gameSection" class="section">
         <h2>Kanji Pronunciation Quiz</h2>
         <div class="score" id="scoreDisplay">Score: 0 / 0 (0%)</div>
+
         <div id="questionArea">
-            <div id="kanjiDisplay" class="kanji-cell" style="font-size: 48px; text-align: center; margin: 30px 0;">
-            </div>
-            <input type="text" id="answerInput" placeholder="Type romaji here (e.g. taberu)"
-                style="width: 70%; text-align: center;">
+            <div id="kanjiDisplay" class="kanji-cell"></div>
+            <input type="text" id="answerInput" placeholder="Type romaji here (e.g. taberu)">
             <br><br>
-            <button onclick="checkAnswer()">Submit Answer</button>
-            <button onclick="speakCurrentKanji()">🔊 Hear Again</button>
-            <button onclick="nextQuestion()">Skip</button>
+            <div class="button-group">
+                <button onclick="checkAnswer()">Submit Answer</button>
+                <button onclick="speakCurrentKanji()">🔊 Hear Again</button>
+                <button onclick="nextQuestion()">Skip</button>
+            </div>
         </div>
+
         <div id="feedbackArea"></div>
-        <div style="margin-top: 20px;">
-            <button onclick="showStats()">📊 Stats</button>
-            <button onclick="goBackToInput()">← Manage List</button>
+
+        <div class="button-group">
+            <button onclick="showStats()">Stats</button>
+            <button onclick="goBackToInput()">Manage List</button>
         </div>
     </div>
 
     <!-- Stats Modal -->
-    <div id="statsModal"
-        style="position: fixed; top: 20%; left: 20%; width: 60%; background: white; border: 2px solid #ccc; padding: 20px; display: none; z-index: 1000;">
+    <div id="statsModal">
         <h3>Session Stats</h3>
         <div id="statsContent"></div>
-        <button onclick="hideStats()">Close</button>
+        <button onclick="hideStats()" style="width: auto; margin-top: 15px;">Close</button>
     </div>
 
     <script>
@@ -227,24 +348,15 @@
 
         // CSV Export/Import Functions
         function exportToCSV() {
-            if (gameData.length === 0) {
-                return alert('No data to export!');
-            }
-
+            if (gameData.length === 0) return alert('No data to export!');
             const csvContent = [
-                // Header matching import exactly
-                'kanji,romaji,correct,wrong',
-                ...gameData.map(item => [
-                    `"${item.kanji.replace(/"/g, '""')}"`,  // Escape quotes
-                    `"${(item.romaji || '').replace(/"/g, '""')}"`,
-                    item.correct,
-                    item.wrong
-                ].join(','))
+                'kanji,romaji,correct,wrong', // Header
+                ...gameData.map(item =>
+                    `"${item.kanji.replace(/"/g, '""')}","${item.romaji.replace(/"/g, '""')}",${item.correct},${item.wrong}`
+                )
             ].join('\n');
 
-            const blob = new Blob([csvContent], {
-                type: 'text/csv;charset=utf-8;'
-            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
@@ -256,7 +368,6 @@
             URL.revokeObjectURL(url);
         }
 
-
         document.getElementById('csvFileInput').addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -266,18 +377,14 @@
                 const csv = e.target.result;
                 const importedData = parseCSV(csv);
 
-                if (importedData.length === 0) {
-                    return alert('No valid data found in CSV!');
-                }
+                if (importedData.length === 0) return alert('No valid data found in CSV!');
 
-                // Merge with existing data (avoid duplicates by kanji)
+                // Merge with existing data, avoid duplicates by kanji
                 const existingKanji = gameData.map(item => item.kanji);
                 const newItems = importedData.filter(item => !existingKanji.includes(item.kanji));
-
                 gameData.push(...newItems);
                 sessionStorage.setItem('kanjiGameItems', JSON.stringify(gameData));
                 loadKanjiListTable();
-
                 alert(`Imported ${newItems.length} new kanji. Total: ${gameData.length}`);
             };
             reader.readAsText(file, 'UTF-8');
@@ -286,13 +393,12 @@
         function parseCSV(csv) {
             const lines = csv.split('\n').filter(line => line.trim());
             const items = [];
-
             for (let i = 1; i < lines.length; i++) { // Skip header
                 const cols = lines[i].split(',').map(col => col.trim().replace(/^"|"$/g, ''));
-                if (cols.length >= 1 && cols[0]) {
+                if (cols.length >= 2) {
                     items.push({
                         kanji: cols[0],
-                        romaji: cols[1] || '',
+                        romaji: cols[1],
                         correct: parseInt(cols[2]) || 0,
                         wrong: parseInt(cols[3]) || 0
                     });
@@ -311,15 +417,13 @@
 
             gameData.forEach((item, index) => {
                 const row = tbody.insertRow();
+                const pct = (item.correct + item.wrong > 0) ?
+                    Math.round((item.correct / (item.correct + item.wrong)) * 100) : 0;
                 row.innerHTML = `
                     <td class="kanji-cell">${escapeHtml(item.kanji)}</td>
-                    <td>${escapeHtml(item.romaji || '❌ Not set')}</td>
-                    <td>${item.correct}/${item.correct + item.wrong} 
-                        (${item.correct + item.wrong > 0 ? Math.round(item.correct / (item.correct + item.wrong) * 100) : 0}%)
-                    </td>
-                    <td>
-                        <button class="delete-btn" onclick="deleteKanji(${index})">🗑️ Delete</button>
-                    </td>
+                    <td>${escapeHtml(item.romaji || 'Not set')}</td>
+                    <td>${item.correct}/${item.wrong} (${pct}%)</td>
+                    <td><button class="delete-btn" onclick="deleteKanji(${index})">Delete</button></td>
                 `;
             });
 
@@ -332,10 +436,7 @@
             const romaji = document.getElementById('newRomajiInput').value.trim();
 
             if (!kanji) return alert('Please enter a kanji!');
-
-            if (gameData.some(item => item.kanji === kanji)) {
-                return alert('Kanji already exists!');
-            }
+            if (gameData.some(item => item.kanji === kanji)) return alert('Kanji already exists!');
 
             gameData.push({
                 kanji,
@@ -343,7 +444,6 @@
                 correct: 0,
                 wrong: 0
             });
-
             sessionStorage.setItem('kanjiGameItems', JSON.stringify(gameData));
             loadKanjiListTable();
         }
@@ -365,12 +465,11 @@
         }
 
         function loadRomajiEditTable() {
-            if (gameData.filter(item => !item.romaji).length === 0) {
+            const itemsWithoutRomaji = gameData.filter(item => !item.romaji);
+            if (itemsWithoutRomaji.length === 0) {
                 startGame();
                 return;
             }
-
-            const itemsWithoutRomaji = gameData.filter(item => !item.romaji);
             populateEditTable(itemsWithoutRomaji);
             showSection('editSection');
         }
@@ -380,7 +479,7 @@
             const tbody = document.querySelector('#editTable tbody');
             tbody.innerHTML = '';
 
-            items.forEach((item) => {
+            items.forEach(item => {
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td class="kanji-cell">${escapeHtml(item.kanji)}</td>
@@ -393,14 +492,13 @@
             const itemsWithoutRomaji = gameData.filter(item => !item.romaji);
             let index = 0;
 
-            document.querySelectorAll('#editTable tbody tr').forEach((row) => {
+            document.querySelectorAll('#editTable tbody tr').forEach(row => {
                 const romajiCell = row.cells[1];
                 const romajiInput = romajiCell.querySelector('input');
-
-                if (romajiInput && romajiInput.value.trim()) {
+                if (romajiInput) {
                     itemsWithoutRomaji[index].romaji = romajiInput.value.trim();
+                    index++;
                 }
-                index++;
             });
 
             sessionStorage.setItem('kanjiGameItems', JSON.stringify(gameData));
@@ -455,10 +553,10 @@
             if (isCorrect) {
                 score.correct++;
                 currentItem.correct++;
-                showFeedback(`✅ Correct! "${currentItem.romaji}"`, 'correct');
+                showFeedback('Correct! ' + currentItem.romaji, 'correct');
             } else {
                 currentItem.wrong++;
-                showFeedback(`❌ Wrong. Correct: "${currentItem.romaji}"`, 'wrong');
+                showFeedback('Wrong. Correct: ' + currentItem.romaji, 'wrong');
             }
 
             gameData[currentItem.index] = currentItem;
@@ -467,7 +565,7 @@
         }
 
         function normalizeRomaji(str) {
-            return str.toLowerCase().trim().replace(/\s+/g, ' ');
+            return str.toLowerCase().trim().replace(/[^a-z]/g, '');
         }
 
         function showFeedback(message, type) {
@@ -478,8 +576,7 @@
 
         function updateScoreDisplay() {
             const pct = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
-            document.getElementById('scoreDisplay').textContent =
-                `Score: ${score.correct}/${score.total} (${pct}%)`;
+            document.getElementById('scoreDisplay').textContent = `Score: ${score.correct}/${score.total} (${pct}%)`;
         }
 
         function speakCurrentKanji() {
@@ -493,11 +590,11 @@
         }
 
         function showStats() {
-            const stats = gameData.map((item, i) => `
-                <div>${item.kanji}: ${item.romaji || '❌ No romaji'} → ${item.correct}/${item.correct + item.wrong} 
-                (${item.correct + item.wrong > 0 ? Math.round(item.correct / (item.correct + item.wrong) * 100) : 0}%)
-                </div>
-            `).join('');
+            const stats = gameData.map(item => {
+                const pct = (item.correct + item.wrong > 0) ?
+                    Math.round((item.correct / (item.correct + item.wrong)) * 100) : 0;
+                return `<div>${item.kanji}: ${item.romaji || 'No romaji'} ${item.correct}/${item.wrong} (${pct}%)</div>`;
+            }).join('');
 
             document.getElementById('statsContent').innerHTML = stats;
             document.getElementById('statsModal').style.display = 'block';
@@ -513,6 +610,7 @@
             return div.innerHTML;
         }
 
+        // Enter key support
         document.addEventListener('keypress', function (e) {
             if (e.key === 'Enter' && document.getElementById('gameSection').classList.contains('active')) {
                 checkAnswer();
