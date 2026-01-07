@@ -219,6 +219,8 @@
         let localData = []; // Mirror of Sheet Data
         let currentItem = null;
         let sessionScore = { correct: 0, total: 0 };
+        let repeatQueue = []; // items the user got wrong and must repeat
+
 
         // --- INIT ---
         window.onload = function () {
@@ -304,15 +306,21 @@
         function startGame() {
             if (localData.length === 0) return alert("Add some kanji first!");
             sessionScore = { correct: 0, total: 0 };
+            repeatQueue = []; // reset repeat list each session
             updateScoreDisplay();
             showSection('gameSection');
             nextQuestion();
         }
 
         function nextQuestion() {
-            // Simple random selection
-            const idx = Math.floor(Math.random() * localData.length);
-            currentItem = localData[idx];
+            // 1) If there are wrong answers pending, ask them first
+            if (repeatQueue.length > 0) {
+                currentItem = repeatQueue[0]; // always take the first pending
+            } else {
+                // 2) Otherwise pick a fresh random item
+                const idx = Math.floor(Math.random() * localData.length);
+                currentItem = localData[idx];
+            }
 
             document.getElementById('kanjiDisplay').textContent = currentItem.kanji;
             document.getElementById('answerInput').value = '';
@@ -333,14 +341,26 @@
 
             const msg = isCorrect ? "Correct!" : `${currentItem.romaji}`;
             const cls = isCorrect ? "correct" : "wrong";
+            document.getElementById('feedbackArea').innerHTML =
+                `<div class="feedback ${cls}">${msg}</div>`;
 
-            document.getElementById('feedbackArea').innerHTML = `<div class="feedback ${cls}">${msg}</div>`;
-
-            // Update Sheet in Background (don't block UI)
+            // Update Sheet in Background
             google.script.run.updateStats(currentItem.kanji, isCorrect);
 
-            // Update local memory for stats consistency within session
+            // Update local stats
             if (isCorrect) currentItem.correct++; else currentItem.wrong++;
+
+            // === NEW LOGIC: manage repeatQueue ===
+            if (!isCorrect) {
+                // Add to repeat queue if not already there
+                if (!repeatQueue.some(item => item.kanji === currentItem.kanji)) {
+                    repeatQueue.push(currentItem);
+                }
+            } else {
+                // If just answered correctly and it was in the queue, remove it
+                repeatQueue = repeatQueue.filter(item => item.kanji !== currentItem.kanji);
+            }
+            // === END NEW LOGIC ===
 
             setTimeout(nextQuestion, 2000);
         }
