@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Kanji Pronunciation Game</title>
+    <style>
+        /* [STYLES ARE IDENTICAL TO YOUR ORIGINAL, WITH ADDED LOADER] */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+            line-height: 1.5;
+        }
+
+        .section {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        input,
+        button {
+            font-size: 16px;
+            padding: 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        input {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            min-height: 34px;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            width: auto;
+        }
+
+        .add-btn {
+            background: #28a745;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            display: block;
+            overflow-x: auto;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 2px 4px;
+            text-align: left;
+        }
+
+        .kanji-cell {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .score {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 16px 0;
+            text-align: center;
+            background: #f8f9fa;
+            padding: 15px;
+        }
+
+        .feedback {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .wrong {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        /* Loader Overlay */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="inputSection" class="section active">
+        <h2>Kanji Manager (Google Sheet)</h2>
+        <p>Data is saved directly to your Spreadsheet.</p>
+
+        <div class="input-row">
+            <input type="text" id="newKanjiInput" placeholder="Kanji (e.g. 食べる)">
+            <input type="text" id="newRomajiInput" placeholder="Romaji (e.g. taberu)">
+            <button class="add-btn" onclick="addNewKanji()">Add to Sheet</button>
+        </div>
+
+        <table id="kanjiListTable">
+            <thead>
+                <tr>
+                    <th>Kanji</th>
+                    <th>Romaji</th>
+                    <th>Stats</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="button-group">
+            <button onclick="startGame()">Start Game</button>
+            <button onclick="refreshData()">Sync Data</button>
+        </div>
+    </div>
+
+    <div id="gameSection" class="section">
+        <h2>Kanji Quiz</h2>
+        <div class="score" id="scoreDisplay">Session Score: 0 / 0</div>
+
+        <div style="text-align: center;">
+            <div id="kanjiDisplay" style="font-size: 16px; margin: 10px 0;"></div>
+            <input type="text" id="answerInput" placeholder="Type romaji..." autocomplete="off">
+
+            <div class="button-group">
+                <button onclick="checkAnswer()">Submit</button>
+                <button onclick="speakCurrentKanji()">🔊 Listen</button>
+                <button onclick="nextQuestion()">Skip</button>
+            </div>
+        </div>
+
+        <div id="feedbackArea"></div>
+
+        <div class="button-group">
+            <button onclick="goBackToInput()">Manage List</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        let localData = []; // Mirror of Sheet Data
+        let currentItem = null;
+        let sessionScore = { correct: 0, total: 0 };
+
+        // --- INIT ---
+        window.onload = function () {
+            refreshData();
+        };
+
+        function showLoader(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // --- DATA SYNC ---
+        function refreshData() {
+            showLoader(true);
+            google.script.run
+                .withSuccessHandler(data => {
+                    localData = data;
+                    renderTable();
+                    showLoader(false);
+                })
+                .withFailureHandler(err => {
+                    alert('Error loading data: ' + err);
+                    showLoader(false);
+                })
+                .getKanjiData();
+        }
+
+        // --- MANAGEMENT ---
+        function renderTable() {
+            const tbody = document.querySelector('#kanjiListTable tbody');
+            tbody.innerHTML = '';
+
+            localData.forEach((item, index) => {
+                const tr = tbody.insertRow();
+                const total = item.correct + item.wrong;
+                const pct = total > 0 ? Math.round((item.correct / total) * 100) : 0;
+
+                tr.innerHTML = `
+                    <td class="kanji-cell">${escapeHtml(item.kanji)}</td>
+                    <td>${escapeHtml(item.romaji)}</td>
+                    <td>${item.correct}/${item.wrong} (${pct}%)</td>
+                    <td><button class="delete-btn" onclick="deleteKanji('${item.kanji}')">Del</button></td>
+                `;
+            });
+        }
+
+        function addNewKanji() {
+            const kanji = document.getElementById('newKanjiInput').value.trim();
+            const romaji = document.getElementById('newRomajiInput').value.trim();
+
+            if (!kanji || !romaji) return alert("Please enter Kanji and Romaji");
+
+            showLoader(true);
+            google.script.run
+                .withSuccessHandler(updatedData => {
+                    localData = updatedData;
+                    renderTable();
+                    document.getElementById('newKanjiInput').value = '';
+                    document.getElementById('newRomajiInput').value = '';
+                    showLoader(false);
+                })
+                .addKanjiItem(kanji, romaji);
+        }
+
+        function deleteKanji(kanji) {
+            if (!confirm("Delete " + kanji + "?")) return;
+
+            showLoader(true);
+            google.script.run
+                .withSuccessHandler(updatedData => {
+                    localData = updatedData;
+                    renderTable();
+                    showLoader(false);
+                })
+                .deleteKanjiItem(kanji);
+        }
+
+        // --- GAMEPLAY ---
+        function startGame() {
+            if (localData.length === 0) return alert("Add some kanji first!");
+            sessionScore = { correct: 0, total: 0 };
+            updateScoreDisplay();
+            showSection('gameSection');
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            // Simple random selection
+            const idx = Math.floor(Math.random() * localData.length);
+            currentItem = localData[idx];
+
+            document.getElementById('kanjiDisplay').textContent = currentItem.kanji;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedbackArea').innerHTML = '';
+            document.getElementById('answerInput').focus();
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById('answerInput').value.trim().toLowerCase();
+            if (!input) return;
+
+            const correct = currentItem.romaji.toLowerCase().trim();
+            const isCorrect = (input === correct);
+
+            sessionScore.total++;
+            if (isCorrect) sessionScore.correct++;
+            updateScoreDisplay();
+
+            const msg = isCorrect ? "Correct!" : `${currentItem.romaji}`;
+            const cls = isCorrect ? "correct" : "wrong";
+
+            document.getElementById('feedbackArea').innerHTML = `<div class="feedback ${cls}">${msg}</div>`;
+
+            // Update Sheet in Background (don't block UI)
+            google.script.run.updateStats(currentItem.kanji, isCorrect);
+
+            // Update local memory for stats consistency within session
+            if (isCorrect) currentItem.correct++; else currentItem.wrong++;
+
+            setTimeout(nextQuestion, 2000);
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('scoreDisplay').textContent = `Session: ${sessionScore.correct} / ${sessionScore.total}`;
+        }
+
+        function speakCurrentKanji() {
+            if ('speechSynthesis' in window && currentItem) {
+                const u = new SpeechSynthesisUtterance(currentItem.kanji);
+                u.lang = 'ja-JP';
+                speechSynthesis.speak(u);
+            }
+        }
+
+        function goBackToInput() {
+            showSection('inputSection');
+            refreshData(); // Sync up stats from game session
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Enter key to submit
+        document.getElementById('answerInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkAnswer();
+        });
+    </script>
+</body>
+
+</html>
