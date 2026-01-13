@@ -3,9 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kanji Pronunciation Game</title>
     <style>
-        /* [STYLES ARE IDENTICAL TO YOUR ORIGINAL, WITH ADDED LOADER] */
         * {
             box-sizing: border-box;
         }
@@ -18,6 +18,12 @@
             line-height: 1.5;
         }
 
+        h2,
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
         .section {
             display: none;
             margin-bottom: 30px;
@@ -28,7 +34,9 @@
         }
 
         input,
-        button {
+        button,
+        select,
+        label {
             font-size: 16px;
             padding: 12px;
             margin: 5px 0;
@@ -46,63 +54,82 @@
             color: white;
             border: none;
             cursor: pointer;
-            min-height: 34px;
+            min-height: 44px;
             width: 100%;
+            margin: 5px 0;
         }
 
         button:hover {
             background: #0056b3;
         }
 
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
         .delete-btn {
             background: #dc3545;
             width: auto;
+            display: inline-block;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
         }
 
         .add-btn {
             background: #28a745;
         }
 
+        .add-btn:hover {
+            background: #218838;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            display: block;
             overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: #f2f2f2;
         }
 
         th,
         td {
             border: 1px solid #ddd;
-            padding: 2px 4px;
+            padding: 12px 8px;
             text-align: left;
+            min-width: 80px;
         }
 
         .kanji-cell {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: clamp(12px, 6vw, 16px);
+            font-family: 'Noto Sans JP', sans-serif;
             text-align: center;
+        }
+
+        .explanation-cell {
+            font-size: 12px;
+            max-width: 150px;
+            word-wrap: break-word;
         }
 
         .score {
             font-size: 12px;
-            font-weight: bold;
-            margin: 16px 0;
+            margin: 10px 0;
             text-align: center;
+            padding: 5px;
             background: #f8f9fa;
-            padding: 15px;
+            border-radius: 5px;
         }
 
         .feedback {
+            font-size: clamp(16px, 4vw, 20px);
             padding: 15px;
             margin: 10px 0;
             border-radius: 5px;
-            text-align: center;
         }
 
         .correct {
@@ -115,63 +142,144 @@
             color: #721c24;
         }
 
+        .csv-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .input-row {
+                flex-direction: row;
+            }
+
+            input[type="text"] {
+                max-width: none;
+            }
+
+            button {
+                width: auto;
+            }
+
+            table {
+                overflow-x: visible;
+                display: table;
+            }
+        }
+
+        #statsModal {
+            position: fixed;
+            top: 10%;
+            left: 5%;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: white;
+            border: 2px solid #ccc;
+            padding: 20px;
+            display: none;
+            z-index: 1000;
+            border-radius: 10px;
+        }
+
+        #questionArea {
+            text-align: center;
+        }
+
+        #kanjiDisplay {
+            font-size: 16px;
+            margin: 10px 0;
+            min-height: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        #explanationDisplay {
+            font-size: 16px;
+            margin: 10px 0;
+            padding: 5px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            min-height: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #answerInput {
+            width: 90%;
+            max-width: 300px;
+            font-size: clamp(12px, 5vw, 16px);
+        }
+
         .button-group {
             display: flex;
+            flex-direction: column;
             gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 15px;
+            max-width: 300px;
+            margin: 20px auto;
         }
 
-        /* Loader Overlay */
+        @media (min-width: 480px) {
+            .button-group {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .button-group button {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+
+        /* Simple loader */
         #loader {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
+            inset: 0;
+            display: none;
             align-items: center;
-            z-index: 9999;
-        }
-
-        .spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #007bff;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: 2000;
+            font-size: 20px;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="loader">
-        <div class="spinner"></div>
-    </div>
+    <div id="loader">Loading...</div>
 
+    <!-- Kanji List Management Section -->
     <div id="inputSection" class="section active">
-        <h2>Kanji Manager (Google Sheet)</h2>
-        <p>Data is saved directly to your Spreadsheet.</p>
+        <h2>Kanji List Management</h2>
+        <p>Add new kanji with romaji and explanation. Your data is saved in Google Sheets.</p>
 
-        <div class="input-row">
-            <input type="text" id="newKanjiInput" placeholder="Kanji (e.g. 食べる)">
-            <input type="text" id="newRomajiInput" placeholder="Romaji (e.g. taberu)">
-            <button class="add-btn" onclick="addNewKanji()">Add to Sheet</button>
+        <div class="csv-controls">
+            <h3>CSV Import/Export</h3>
+            <p>Export to edit in Excel/Google Sheets, then import back.</p>
+            <button onclick="exportToCSV()">Export to CSV</button>
+            <label for="csvFileInput"
+                style="cursor: pointer; display: inline-block; background: #17a2b8; color: white; padding: 12px; border-radius: 5px; margin: 5px 0;">
+                Import CSV
+            </label>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
         </div>
 
         <table id="kanjiListTable">
@@ -179,80 +287,111 @@
                 <tr>
                     <th>Kanji</th>
                     <th>Romaji</th>
+                    <th>Explanation</th>
                     <th>Stats</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
 
+        <div class="input-row">
+            <input type="text" id="newKanjiInput" placeholder="Enter kanji (e.g. 食)">
+            <input type="text" id="newRomajiInput" placeholder="Romaji (e.g. taberu)">
+            <input type="text" id="newExplanationInput" placeholder="Explanation (e.g. to eat)">
+            <button class="add-btn" onclick="addNewKanji()">Add Kanji</button>
+        </div>
+
         <div class="button-group">
-            <button onclick="startGame()">Start Game</button>
-            <button onclick="refreshData()">Sync Data</button>
+            <button onclick="loadRomajiEditTable()">Edit &amp; Start Game</button>
+            <button onclick="clearAllData()" style="background: #6c757d;">Clear All Data</button>
         </div>
     </div>
 
+    <!-- Edit Section -->
+    <div id="editSection" class="section">
+        <h2>Edit Romaji &amp; Explanation</h2>
+        <table id="editTable">
+            <thead>
+                <tr>
+                    <th>Kanji</th>
+                    <th>Romaji</th>
+                    <th>Explanation</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div class="button-group">
+            <button onclick="saveEditedList()">Save &amp; Start Game</button>
+            <button onclick="goBackToInput()">Back to List</button>
+        </div>
+    </div>
+
+    <!-- Game Section -->
     <div id="gameSection" class="section">
-        <h2>Kanji Quiz</h2>
-        <div class="score" id="scoreDisplay">Session Score: 0 / 0</div>
-
-        <div style="text-align: center;">
-            <div id="kanjiDisplay" style="font-size: 16px; margin: 10px 0;"></div>
-            <input type="text" id="answerInput" placeholder="Type romaji..." autocomplete="off">
-
+        <h2>Kanji Pronunciation Quiz</h2>
+        <div class="score" id="scoreDisplay">Score: 0 / 0 (0%)</div>
+        <div id="questionArea">
+            <div id="kanjiDisplay" class="kanji-cell"></div>
+            <input type="text" id="answerInput" placeholder="Type romaji here">
+            <div id="explanationDisplay"></div>
+            <br>
             <div class="button-group">
-                <button onclick="checkAnswer()">Submit</button>
-                <button onclick="speakCurrentKanji()">🔊 Listen</button>
+                <button onclick="checkAnswer()">Submit Answer</button>
+                <button onclick="speakCurrentKanji()">🔊 Hear</button>
                 <button onclick="nextQuestion()">Skip</button>
             </div>
         </div>
-
         <div id="feedbackArea"></div>
 
         <div class="button-group">
+            <button onclick="showStats()">Stats</button>
             <button onclick="goBackToInput()">Manage List</button>
         </div>
     </div>
 
+    <div id="statsModal">
+        <h3>Session Stats</h3>
+        <div id="statsContent"></div>
+        <button onclick="hideStats()" style="width: auto; margin-top: 15px;">Close</button>
+    </div>
+
     <script>
-        // --- GLOBAL STATE ---
-        let localData = []; // Mirror of Sheet Data
+        let localData = [];
         let currentItem = null;
         let sessionScore = { correct: 0, total: 0 };
-        let repeatQueue = []; // items the user got wrong and must repeat
+        let repeatQueue = [];
 
-
-        // --- INIT ---
         window.onload = function () {
             refreshData();
         };
 
         function showLoader(show) {
-            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+            const el = document.getElementById('loader');
+            if (el) el.style.display = show ? 'flex' : 'none';
         }
 
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+            const sec = document.getElementById(id);
+            if (sec) sec.classList.add('active');
         }
 
-        // --- DATA SYNC ---
         function refreshData() {
             showLoader(true);
             google.script.run
                 .withSuccessHandler(data => {
-                    localData = data;
+                    localData = data || [];
                     renderTable();
                     showLoader(false);
                 })
                 .withFailureHandler(err => {
-                    alert('Error loading data: ' + err);
+                    alert('Error loading data: ' + err.message);
                     showLoader(false);
                 })
                 .getKanjiData();
         }
 
-        // --- MANAGEMENT ---
         function renderTable() {
             const tbody = document.querySelector('#kanjiListTable tbody');
             tbody.innerHTML = '';
@@ -263,66 +402,163 @@
                 const pct = total > 0 ? Math.round((item.correct / total) * 100) : 0;
 
                 tr.innerHTML = `
-                    <td class="kanji-cell">${escapeHtml(item.kanji)}</td>
-                    <td>${escapeHtml(item.romaji)}</td>
-                    <td>${item.correct}/${item.wrong} (${pct}%)</td>
-                    <td><button class="delete-btn" onclick="deleteKanji('${item.kanji}')">Del</button></td>
-                `;
+        <td class="kanji-cell">${escapeHtml(item.kanji)}</td>
+        <td>${escapeHtml(item.romaji)}</td>
+        <td class="explanation-cell">${escapeHtml(item.explanation) || '-'}</td>
+        <td>${item.correct}/${item.wrong} (${pct}%)</td>
+        <td><button class="delete-btn" onclick="deleteKanjiByIndex(${index})">Del</button></td>
+      `;
             });
         }
 
         function addNewKanji() {
             const kanji = document.getElementById('newKanjiInput').value.trim();
             const romaji = document.getElementById('newRomajiInput').value.trim();
+            const explanation = document.getElementById('newExplanationInput').value.trim();
 
-            if (!kanji || !romaji) return alert("Please enter Kanji and Romaji");
+            if (!kanji || !romaji) {
+                alert('Please enter Kanji and Romaji');
+                return;
+            }
 
             showLoader(true);
             google.script.run
                 .withSuccessHandler(updatedData => {
-                    localData = updatedData;
+                    localData = updatedData || [];
                     renderTable();
                     document.getElementById('newKanjiInput').value = '';
                     document.getElementById('newRomajiInput').value = '';
+                    document.getElementById('newExplanationInput').value = '';
                     showLoader(false);
                 })
-                .addKanjiItem(kanji, romaji);
+                .withFailureHandler(err => {
+                    alert('Error adding kanji: ' + err.message);
+                    showLoader(false);
+                })
+                .addKanjiItem(kanji, romaji, explanation);
         }
 
-        function deleteKanji(kanji) {
-            if (!confirm("Delete " + kanji + "?")) return;
+        function deleteKanjiByIndex(index) {
+            const item = localData[index];
+            if (!item) return;
+            if (!confirm('Delete ' + item.kanji + '?')) return;
 
             showLoader(true);
             google.script.run
                 .withSuccessHandler(updatedData => {
-                    localData = updatedData;
+                    localData = updatedData || [];
                     renderTable();
                     showLoader(false);
                 })
-                .deleteKanjiItem(kanji);
+                .withFailureHandler(err => {
+                    alert('Error deleting kanji: ' + err.message);
+                    showLoader(false);
+                })
+                .deleteKanjiItem(item.kanji);
         }
 
-        // --- GAMEPLAY ---
+        // --- Edit mode ---
+        function loadRomajiEditTable() {
+            if (localData.length === 0) {
+                alert('No kanji to edit. Add some first.');
+                return;
+            }
+            const tbody = document.querySelector('#editTable tbody');
+            tbody.innerHTML = '';
+
+            localData.forEach((item, index) => {
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+        <td class="kanji-cell">${escapeHtml(item.kanji)}</td>
+        <td><input type="text" data-index="${index}" class="edit-romaji" value="${escapeHtml(item.romaji)}"></td>
+        <td><input type="text" data-index="${index}" class="edit-explanation" value="${escapeHtml(item.explanation || '')}"></td>
+      `;
+            });
+
+            showSection('editSection');
+        }
+
+        function saveEditedList() {
+            const romajiInputs = document.querySelectorAll('.edit-romaji');
+            const explanationInputs = document.querySelectorAll('.edit-explanation');
+
+            const updates = [];
+
+            romajiInputs.forEach(input => {
+                const idx = Number(input.getAttribute('data-index'));
+                if (!Number.isNaN(idx)) {
+                    const newRomaji = input.value.trim();
+                    const newExplanation = explanationInputs[idx].value.trim();
+                    if (localData[idx] &&
+                        (newRomaji !== localData[idx].romaji ||
+                            newExplanation !== (localData[idx].explanation || ''))) {
+                        updates.push({ index: idx, kanji: localData[idx].kanji, newRomaji, newExplanation });
+                    }
+                }
+            });
+
+            if (updates.length === 0) {
+                showSection('gameSection');
+                startGame();
+                return;
+            }
+
+            showLoader(true);
+            let remaining = updates.length;
+
+            updates.forEach(upd => {
+                google.script.run
+                    .withSuccessHandler(() => {
+                        remaining--;
+                        if (remaining === 0) {
+                            refreshData();
+                            showLoader(false);
+                            showSection('gameSection');
+                            startGame();
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        alert('Error saving edit for ' + upd.kanji + ': ' + err.message);
+                        remaining--;
+                        if (remaining === 0) {
+                            showLoader(false);
+                            showSection('gameSection');
+                            startGame();
+                        }
+                    })
+                    .saveRomajiEdit(upd.kanji, upd.newRomaji, upd.newExplanation);
+            });
+        }
+
+        // --- Game ---
         function startGame() {
-            if (localData.length === 0) return alert("Add some kanji first!");
+            if (localData.length === 0) {
+                alert('Add some kanji first!');
+                return;
+            }
             sessionScore = { correct: 0, total: 0 };
-            repeatQueue = []; // reset repeat list each session
+            repeatQueue = [];
             updateScoreDisplay();
             showSection('gameSection');
             nextQuestion();
         }
 
         function nextQuestion() {
-            // 1) If there are wrong answers pending, ask them first
+            if (localData.length === 0) {
+                alert('No kanji available.');
+                return;
+            }
+
             if (repeatQueue.length > 0) {
-                currentItem = repeatQueue[0]; // always take the first pending
+                currentItem = repeatQueue[0];
             } else {
-                // 2) Otherwise pick a fresh random item
                 const idx = Math.floor(Math.random() * localData.length);
                 currentItem = localData[idx];
             }
 
             document.getElementById('kanjiDisplay').textContent = currentItem.kanji;
+            document.getElementById('explanationDisplay').textContent =
+                currentItem.explanation || 'No explanation provided';
             document.getElementById('answerInput').value = '';
             document.getElementById('feedbackArea').innerHTML = '';
             document.getElementById('answerInput').focus();
@@ -330,56 +566,56 @@
 
         function checkAnswer() {
             const input = document.getElementById('answerInput').value.trim().toLowerCase();
-            if (!input) return;
+            if (!input || !currentItem) return;
 
-            const correct = currentItem.romaji.toLowerCase().trim();
+            const correct = (currentItem.romaji || '').toLowerCase().trim();
             const isCorrect = (input === correct);
 
             sessionScore.total++;
             if (isCorrect) sessionScore.correct++;
             updateScoreDisplay();
 
-            const msg = isCorrect ? "Correct!" : `${currentItem.romaji}`;
-            const cls = isCorrect ? "correct" : "wrong";
+            const msg = isCorrect ? 'Correct! ✓' : 'Wrong! Correct answer: ' + currentItem.romaji;
+            const cls = isCorrect ? 'correct' : 'wrong';
             document.getElementById('feedbackArea').innerHTML =
-                `<div class="feedback ${cls}">${msg}</div>`;
+                '<div class="feedback ' + cls + '">' + msg + '</div>';
 
-            // Update Sheet in Background
             google.script.run.updateStats(currentItem.kanji, isCorrect);
 
-            // Update local stats
-            if (isCorrect) currentItem.correct++; else currentItem.wrong++;
+            if (isCorrect) currentItem.correct = (currentItem.correct || 0) + 1;
+            else currentItem.wrong = (currentItem.wrong || 0) + 1;
 
-            // === NEW LOGIC: manage repeatQueue ===
             if (!isCorrect) {
-                // Add to repeat queue if not already there
                 if (!repeatQueue.some(item => item.kanji === currentItem.kanji)) {
                     repeatQueue.push(currentItem);
                 }
             } else {
-                // If just answered correctly and it was in the queue, remove it
                 repeatQueue = repeatQueue.filter(item => item.kanji !== currentItem.kanji);
             }
-            // === END NEW LOGIC ===
 
             setTimeout(nextQuestion, 2000);
         }
 
         function updateScoreDisplay() {
-            document.getElementById('scoreDisplay').textContent = `Session: ${sessionScore.correct} / ${sessionScore.total}`;
+            const pct = sessionScore.total > 0 ?
+                Math.round((sessionScore.correct / sessionScore.total) * 100) : 0;
+            document.getElementById('scoreDisplay').textContent =
+                'Session: ' + sessionScore.correct + ' / ' + sessionScore.total + ' (' + pct + '%)';
         }
 
         function speakCurrentKanji() {
             if ('speechSynthesis' in window && currentItem) {
                 const u = new SpeechSynthesisUtterance(currentItem.kanji);
                 u.lang = 'ja-JP';
-                speechSynthesis.speak(u);
+                window.speechSynthesis.speak(u);
+            } else {
+                alert('Speech synthesis not supported in this browser');
             }
         }
 
         function goBackToInput() {
             showSection('inputSection');
-            refreshData(); // Sync up stats from game session
+            refreshData();
         }
 
         function escapeHtml(text) {
@@ -389,11 +625,71 @@
             return div.innerHTML;
         }
 
-        // Enter key to submit
-        document.getElementById('answerInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') checkAnswer();
+        function exportToCSV() {
+            if (localData.length === 0) {
+                alert('No data to export!');
+                return;
+            }
+
+            const csvContent = 'kanji,romaji,explanation,correct,wrong\n' +
+                localData.map(item =>
+                    '"' + (item.kanji || '') + '","' +
+                    (item.romaji || '') + '","' +
+                    (item.explanation || '') + '",' +
+                    (item.correct || 0) + ',' +
+                    (item.wrong || 0)
+                ).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'kanji-list-' + new Date().toISOString().slice(0, 10) + '.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function showStats() {
+            const stats = localData.map(item => {
+                const total = item.correct + item.wrong;
+                const pct = total > 0 ? Math.round((item.correct / total) * 100) : 0;
+                return `
+        <div style="margin-bottom: 10px; padding: 8px; border-bottom: 1px solid #ddd;">
+          <strong style="font-size: 18px;">${escapeHtml(item.kanji)}</strong>
+          <span style="color: #666;">(${escapeHtml(item.romaji)})</span><br>
+          <span style="font-size: 14px; color: #555;">${escapeHtml(item.explanation || 'No explanation')}</span><br>
+          <span style="color: ${pct >= 70 ? 'green' : 'red'};">
+            ${item.correct}/${item.wrong} (${pct}%)
+          </span>
+        </div>`;
+            }).join('');
+
+            document.getElementById('statsContent').innerHTML = stats || 'No data yet';
+            document.getElementById('statsModal').style.display = 'block';
+        }
+
+        function hideStats() {
+            document.getElementById('statsModal').style.display = 'none';
+        }
+
+        // Optional: Clear all data (client-only helper; you can add a server function if you want full reset)
+        function clearAllData() {
+            if (!confirm('Clear all rows from the sheet manually before using this, or implement a server clear function.')) {
+                return;
+            }
+        }
+
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' &&
+                document.getElementById('gameSection').classList.contains('active')) {
+                checkAnswer();
+            }
         });
     </script>
+
 </body>
 
 </html>
