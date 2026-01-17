@@ -304,6 +304,7 @@
 
         <div class="button-group">
             <button onclick="loadRomajiEditTable()">Edit &amp; Start Game</button>
+            <button onclick="startGameInOrder()">Start Game in Order</button>
             <button onclick="clearAllData()" style="background: #6c757d;">Clear All Data</button>
         </div>
     </div>
@@ -361,6 +362,8 @@
         let currentItem = null;
         let sessionScore = { correct: 0, total: 0 };
         let repeatQueue = [];
+        let gameMode = 'random';
+        let currentIndex = 0;
 
         window.onload = function () {
             refreshData();
@@ -531,16 +534,22 @@
         }
 
         // --- Game ---
-        function startGame() {
+        function startGame(mode = 'random') {
             if (localData.length === 0) {
                 alert('Add some kanji first!');
                 return;
             }
+            gameMode = mode;
+            currentIndex = 0;
             sessionScore = { correct: 0, total: 0 };
             repeatQueue = [];
             updateScoreDisplay();
             showSection('gameSection');
             nextQuestion();
+        }
+
+        function startGameInOrder() {
+            startGame('ordered');
         }
 
         function nextQuestion() {
@@ -552,8 +561,16 @@
             if (repeatQueue.length > 0) {
                 currentItem = repeatQueue[0];
             } else {
-                const idx = Math.floor(Math.random() * localData.length);
-                currentItem = localData[idx];
+                if (gameMode === 'random') {
+                    const idx = Math.floor(Math.random() * localData.length);
+                    currentItem = localData[idx];
+                } else {
+                    if (currentIndex >= localData.length) {
+                        currentIndex = 0;
+                    }
+                    currentItem = localData[currentIndex];
+                    currentIndex++;
+                }
             }
 
             document.getElementById('kanjiDisplay').textContent = currentItem.kanji;
